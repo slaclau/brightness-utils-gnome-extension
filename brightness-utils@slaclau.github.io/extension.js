@@ -7,7 +7,7 @@ import * as BrightnessSliders from './quicksettings/BrightnessSliders.js';
 const QuickSettingsMenu = Main.panel.statusArea.quickSettings;
 const QuickSettingsGrid = QuickSettingsMenu.menu._grid;
 
-const removeNL = false;
+const removeNL = true;
 
 
 export default class MyExtension extends Extension {
