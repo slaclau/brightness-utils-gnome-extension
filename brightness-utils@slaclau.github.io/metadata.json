@@ -3,6 +3,5 @@
     "name": "Brightness utilities",
     "shell-version": ["45"],
     "uuid": "brightness-utils@slaclau.github.io",
-    "version": 1,
     "url": "https://github.com/slaclau/brightness-utils/gnome-extension"
 }
