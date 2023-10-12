@@ -57,10 +57,8 @@ export class BrightnessSlidersFeature {
         console.log('Loading BrightnessSlidersFeature');
         try {
             this.displays = DDC.getDisplays();
-            console.log('a')
         } catch (error) {
             this.displays = null;
-            console.log('b')
         }
         this.addDisplaySliders(this.displays);
     }
@@ -439,7 +437,7 @@ const Feature = GObject.registerClass(
             if (!includeNL) {
                 let nightLightQMT = new NightLightQMT();
                 this.quickSettingsItems.push(nightLightQMT)
-                sibling = children[children.length - 1];
+                sibling = QuickSettingsMenu._darkMode.quickSettingsItems[0];
                 QuickSettingsMenu._addItemsBefore([nightLightQMT], sibling, 1);
             }
             this.connect('destroy', () => {

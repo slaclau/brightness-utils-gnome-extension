@@ -7,7 +7,7 @@ import * as BrightnessSliders from './quicksettings/BrightnessSliders.js';
 const QuickSettingsMenu = Main.panel.statusArea.quickSettings;
 const QuickSettingsGrid = QuickSettingsMenu.menu._grid;
 
-const removeNL = true;
+const removeNL = false;
 
 
 export default class MyExtension extends Extension {
@@ -40,7 +40,6 @@ export default class MyExtension extends Extension {
             if (
                 item.constructor?.name === 'BrightnessItem' ||
                 (item.constructor?.name === 'NightLightToggle' && removeNL)
-                //|| item.constructor?.name == "DarkModeToggle"
             ) {
                 QuickSettingsGrid.remove_child(item);
             }
