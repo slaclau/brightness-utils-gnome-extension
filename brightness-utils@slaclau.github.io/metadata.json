@@ -1,0 +1,7 @@
+{
+    "description": "Utilities for controlling brightness of external displays and controlling nightlight temperature",
+    "name": "Brightness utilities",
+    "shell-version": ["45"],
+    "uuid": "brightness-utils@slaclau.github.io",
+    "version": 1
+}
