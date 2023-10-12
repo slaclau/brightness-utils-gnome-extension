@@ -1,6 +1,7 @@
-# gnome-extension-brightness
+# gnome-extension-brightness-utils
 
 Simple GNOME extension to control displays' brightness via DDC.
+Additionally allows for control of night light temperature + enable/disable + pause/resume
 
 ## Preparation
 
