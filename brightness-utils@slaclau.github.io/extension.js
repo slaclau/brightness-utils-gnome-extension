@@ -7,6 +7,8 @@ import * as BrightnessSliders from './quicksettings/BrightnessSliders.js';
 const QuickSettingsMenu = Main.panel.statusArea.quickSettings;
 const QuickSettingsGrid = QuickSettingsMenu.menu._grid;
 
+const removeNL = true;
+
 
 export default class MyExtension extends Extension {
     enable() {
@@ -15,21 +17,9 @@ export default class MyExtension extends Extension {
         this.features = [];
 
         this.features.push(new BrightnessSliders.BrightnessSlidersFeature());
-//        this.features.push(new PrivacyMenu.PrivacyToggleFeature());
 
-        let gridChildren = QuickSettingsGrid.get_children();
-        let addIndex;
-        for (let index = 0; index < gridChildren.length; index++) {
-            if (gridChildren[index]?.constructor?.name === 'NMWiredToggle') {
-                addIndex = index - 1;
-            }
-        }
-        //this.loadFeatureAtIndex(1, addIndex);
-        this.loadFeatureAtIndex(0, addIndex);
-        for (let index = 0; index < gridChildren.length; index++) {
-            if (gridChildren[index]?.constructor?.name === 'RfkillToggle') {
-                addIndex = index;
-            }
+        for (let index = 0; index < this.features.length; index++) {
+            this.features[index].load()
         }
         console.log('Removing unneeded items');
         this.removeUnneeded();
@@ -43,32 +33,13 @@ export default class MyExtension extends Extension {
         }
     }
 
-    loadFeatureAtIndex(featureIndex, addIndex) {
-        let children = QuickSettingsGrid.get_children();
-        let tmp = [];
-        let tmp_visible = [];
-        for (let index = addIndex + 1; index < children.length; index++) {
-            let item = children[index];
-            tmp.push(item);
-            tmp_visible.push(item.visible);
-            QuickSettingsGrid.remove_child(item);
-        }
-        console.log(this.features)
-        this.features[featureIndex].load();
-        for (let index = 0; index < tmp.length; index++) {
-            let item = tmp[index];
-            QuickSettingsGrid.add_child(item);
-            item.visible = tmp_visible[index];
-        }
-    }
-
     removeUnneeded() {
         let children = QuickSettingsGrid.get_children();
         for (let index = 0; index < children.length; index++) {
             let item = children[index];
             if (
                 item.constructor?.name === 'BrightnessItem' ||
-                item.constructor?.name === 'NightLightToggle'
+                (item.constructor?.name === 'NightLightToggle' && removeNL)
                 //|| item.constructor?.name == "DarkModeToggle"
             ) {
                 QuickSettingsGrid.remove_child(item);

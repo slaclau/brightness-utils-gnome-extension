@@ -47,6 +47,8 @@ const NightLightInterface = `<node>
 const NightLightProxy = Gio.DBusProxy.makeProxyWrapper(NightLightInterface);
 const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
 
+const includeNL = false;
+
 export class BrightnessSlidersFeature {
     constructor() {
         console.log('Constructing BrightnessSlidersFeature')
@@ -152,43 +154,9 @@ const MasterSlider = GObject.registerClass(
                     this.menu.addMenuItem(this.subSlider);
                 }
             }
-
-            this.menu.addMenuItem(
-                new PopupMenu.PopupSeparatorMenuItem('Night light')
-            );
-            this.nightLightToggle = new NightLightToggle();
-            this.menu.addMenuItem(this.nightLightToggle);
-            this._proxy = new ColorProxy(
-                Gio.DBus.session,
-                C_BUS_NAME,
-                C_OBJECT_PATH,
-                (proxy, error) => {
-                    if (error) {
-                        console.log(error.message);
-                        return;
-                    }
-                    this._proxy.connect(
-                        'g-properties-changed',
-                        this.sync.bind(this)
-                    );
-                    this.sync();
-                }
-            );
-
-            this._disableItem = this.menu.addAction('', () => {
-                this._proxy.DisabledUntilTomorrow =
-                    !this._proxy.DisabledUntilTomorrow;
-                this.nightLightToggle._sync();
-            });
-
-            const nightLightSlider = new NightLightSlider({
-                minimum: 1000,
-                maximum: 10000,
-                swapAxis: false,
-                showAlways: true,
-            });
-            this.menu.addMenuItem(nightLightSlider);
-
+            if (includeNL) {
+                addNightLightMenu(this)
+            }
             this.menu.addMenuItem(
                 new PopupMenu.PopupSeparatorMenuItem('Settings')
             );
@@ -240,6 +208,82 @@ const MasterSlider = GObject.registerClass(
         }
     }
 );
+
+const NightLightQMT = GObject.registerClass(
+    class NightLightQMT extends QuickSettings.QuickMenuToggle {
+        _init(extensionObject) {
+            super._init({
+                title: 'Night Light',
+                iconName: 'night-light-symbolic',
+                toggleMode: true,
+            });
+
+            // Add a header with an icon, title and optional subtitle. This is
+            // recommended for consistency with other quick settings menus.
+            this.menu.setHeader('night-light-symbolic', 'Night Light');
+            addNightLightMenu(this)
+
+            this._nlsettings = new Gio.Settings({
+                schema_id: 'org.gnome.settings-daemon.plugins.color',
+            });
+
+            this._nlsettings.bind(
+                'night-light-enabled',
+                this,
+                'checked',
+                Gio.SettingsBindFlags.DEFAULT
+            );
+        }
+
+        sync() {
+            this.syncing = true;
+            let disabled = this._proxy.DisabledUntilTomorrow;
+            this._disableItem.label.text = disabled
+                ? _('Resume')
+                : _('Disable Until Tomorrow');
+            this.syncing = false;
+        }
+    }
+);
+
+
+function addNightLightMenu(parent) {
+    parent.menu.addMenuItem(
+        new PopupMenu.PopupSeparatorMenuItem('Night light')
+    );
+    parent.nightLightToggle = new NightLightToggle();
+    parent.menu.addMenuItem(parent.nightLightToggle);
+    parent._proxy = new ColorProxy(
+        Gio.DBus.session,
+        C_BUS_NAME,
+        C_OBJECT_PATH,
+        (proxy, error) => {
+            if (error) {
+                console.log(error.message);
+                return;
+            }
+            parent._proxy.connect(
+                'g-properties-changed',
+                parent.sync.bind(parent)
+            );
+            parent.sync();
+        }
+    );
+
+    parent._disableItem = parent.menu.addAction('', () => {
+        parent._proxy.DisabledUntilTomorrow =
+            !parent._proxy.DisabledUntilTomorrow;
+        parent.nightLightToggle._sync();
+    });
+
+    const nightLightSlider = new NightLightSlider({
+        minimum: 1000,
+        maximum: 10000,
+        swapAxis: false,
+        showAlways: true,
+    });
+    parent.menu.addMenuItem(nightLightSlider);
+}
 
 const NightLightToggle = GObject.registerClass(
     class NightLightToggle extends PopupMenu.PopupSwitchMenuItem {
@@ -387,14 +431,20 @@ const Feature = GObject.registerClass(
     class Feature extends QuickSettings.SystemIndicator {
         _init(displays) {
             super._init();
-            let children = QuickSettingsGrid.get_children();
             let master = new MasterSlider(displays);
             this.quickSettingsItems.push(master);
+            let children = QuickSettingsGrid.get_children();
+            let sibling = children[2];
+            QuickSettingsMenu._addItemsBefore([master], sibling, 2);
+            if (!includeNL) {
+                let nightLightQMT = new NightLightQMT();
+                this.quickSettingsItems.push(nightLightQMT)
+                sibling = children[children.length - 1];
+                QuickSettingsMenu._addItemsBefore([nightLightQMT], sibling, 1);
+            }
             this.connect('destroy', () => {
                 this.quickSettingsItems.forEach(item => item.destroy());
             });
-            let sibling = children[2];
-            QuickSettingsMenu._addItemsBefore(this.quickSettingsItems, sibling, 2);
         }
     }
 );
