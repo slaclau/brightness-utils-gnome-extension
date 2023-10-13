@@ -10,7 +10,7 @@ import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js'
 import * as Panel from 'resource:///org/gnome/shell/ui/panel.js';
 
 import {loadInterfaceXML} from 'resource:///org/gnome/shell/misc/fileUtils.js';
-
+import * as DateUtils from 'resource:///org/gnome/shell/misc/dateUtils.js';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -33,20 +33,21 @@ const BrightnessProxy = Gio.DBusProxy.makeProxyWrapper(BrightnessInterface);
 const C_BUS_NAME = 'org.gnome.SettingsDaemon.Color';
 const C_OBJECT_PATH = '/org/gnome/SettingsDaemon/Color';
 
-const ColorInterface = loadInterfaceXML('org.gnome.SettingsDaemon.Color');
-const colorInfo = Gio.DBusInterfaceInfo.new_for_xml(ColorInterface);
-
-const COLOR_SCHEMA = 'org.gnome.settings-daemon.plugins.color';
-
-const NightLightInterface = `<node>
+const ColorInterface = `<node>
   <interface name="org.gnome.SettingsDaemon.Color">
+    <property name="DisabledUntilTomorrow" type="b" access="readwrite"/>
     <property name="NightLightActive" type="b" access="read"/>
-    <property name="Temperature" type="d" access="read"/>
+    <property name="Sunrise" type="d" access="read"/>
+    <property name="Sunset" type="d" access="read"/>
+    <method name="NightLightPreview">
+      <arg type="u" name="duration" direction="in"/>
+    </method>
   </interface>
 </node>`;
-const NightLightProxy = Gio.DBusProxy.makeProxyWrapper(NightLightInterface);
+
 const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
 
+const COLOR_SCHEMA = 'org.gnome.settings-daemon.plugins.color';
 const includeNL = false;
 
 export class BrightnessSlidersFeature {
@@ -231,14 +232,28 @@ const NightLightQMT = GObject.registerClass(
                 'checked',
                 Gio.SettingsBindFlags.DEFAULT
             );
+
+            this._nlsettings.connect('changed::night-light-enabled', () =>
+                this.sync()
+            );
+
         }
 
         sync() {
             this.syncing = true;
-            let disabled = this._proxy.DisabledUntilTomorrow;
-            this._disableItem.label.text = disabled
+            let paused = this._proxy.DisabledUntilTomorrow;
+            this._disableItem.label.text = paused
                 ? _('Resume')
                 : _('Disable Until Tomorrow');
+            let disabled = !this._proxy.NightLightActive;
+            let subtitle_1 = disabled ? _('Disabled') : ( paused ? _('Paused') : _('Enabled') )
+            let start = this._proxy.Sunset;
+            let end = this._proxy.Sunrise;
+            let now = GLib.DateTime.new_now_local()
+            now = now.get_hour() + now.get_minute() / 60 + now.get_second() / 3600
+            let active = ( now < end ) || ( now > start )
+            let subtitle_2 = active ? _('On') : _('Off')
+            this.subtitle = ( disabled || paused ) ? subtitle_1 : subtitle_1 + '; ' + subtitle_2
             this.syncing = false;
         }
     }
@@ -251,6 +266,7 @@ function addNightLightMenu(parent) {
     );
     parent.nightLightToggle = new NightLightToggle();
     parent.menu.addMenuItem(parent.nightLightToggle);
+
     parent._proxy = new ColorProxy(
         Gio.DBus.session,
         C_BUS_NAME,
@@ -281,6 +297,17 @@ function addNightLightMenu(parent) {
         showAlways: true,
     });
     parent.menu.addMenuItem(nightLightSlider);
+
+    parent._previewItem = parent.menu.addAction('Preview', () => {
+        console.log(ColorInterface)
+        parent._proxy.NightLightPreviewRemote(10, (returnValue, errorObj, fdList) => {
+            if (errorObj === null) {
+                console.log(returnValue);
+            } else {
+                logError(errorObj);
+            }
+        });
+    });
 }
 
 const NightLightToggle = GObject.registerClass(
@@ -459,3 +486,5 @@ function debounce(func, wait, options = {priority: GLib.PRIORITY_DEFAULT}) {
         sourceId = GLib.timeout_add(options.priority, wait, debouncedFunc);
     };
 }
+
+
