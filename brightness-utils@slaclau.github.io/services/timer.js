@@ -4,7 +4,7 @@
 
 const Mainloop = imports.mainloop;
 
-function setTimeout(func, millis, ...args) {
+export function setTimeout(func, millis, ...args) {
     let id = Mainloop.timeout_add(
         millis,
         () => {
@@ -17,6 +17,6 @@ function setTimeout(func, millis, ...args) {
     return id;
 }
 
-function clearTimeout(id) {
+export function clearTimeout(id) {
     Mainloop.source_remove(id);
 }

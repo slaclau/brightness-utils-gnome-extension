@@ -59,6 +59,7 @@ export class BrightnessSlidersFeature {
         try {
             this.displays = DDC.getDisplays();
         } catch (error) {
+            console.error(error);
             this.displays = null;
         }
         this.addDisplaySliders(this.displays);
@@ -137,7 +138,37 @@ const MasterSlider = GObject.registerClass(
             this.menu.addMenuItem(builtinSlider);
             this.subSliders.push(builtinSlider);
             console.log('Added built in slider');
+            console.log(displays)
+            this._add_displays(displays);
+            if (includeNL) {
+                addNightLightMenu(this)
+            }
+            this.settingsSeparator = new PopupMenu.PopupSeparatorMenuItem('Settings')
+            this.menu.addMenuItem(
+                this.settingsSeparator
+            );
+            this.reloadButton = new PopupMenu.PopupMenuItem('Reload displays');
+            this.reloadButton.connect('activate', item => {
+                console.log('Reload');
+                for (let i = 1; i < this.subSliders.length; i++) {
+                    this.subSliders[i].destroy()
+                }
+                try {
+                    this.displays = DDC.getDisplays();
+                } catch (error) {
+                    console.error(error);
+                    this.displays = null;
+                }
+                this._add_displays(displays);
+            });
+            this.menu.addMenuItem(this.reloadButton);
+            this.setMode = 'same';
+            console.log('Master slider init');
+        }
+
+        _add_displays(displays) {
             if (displays) {
+                let i = 1;
                 for (let display of displays) {
                     console.log('Found ' + display.name);
                     // Create the slider and associate it with the indicator, being sure to
@@ -150,24 +181,10 @@ const MasterSlider = GObject.registerClass(
                         this
                     );
                     this.subSliders.push(this.subSlider);
-                    this.menu.addMenuItem(this.subSlider);
+                    this.menu.addMenuItem(this.subSlider, i);
+                    i++;
                 }
             }
-            if (includeNL) {
-                addNightLightMenu(this)
-            }
-            this.menu.addMenuItem(
-                new PopupMenu.PopupSeparatorMenuItem('Settings')
-            );
-            this.reloadButton = new PopupMenu.PopupMenuItem('Reload displays');
-            this.reloadButton.connect('activate', item => {
-                console.log('Reload');
-                extension.disable();
-                extension.enable();
-            });
-            this.menu.addMenuItem(this.reloadButton);
-            this.setMode = 'same';
-            console.log('Master slider init');
         }
 
         setValue(value) {
@@ -199,10 +216,12 @@ const MasterSlider = GObject.registerClass(
                 this.setValue(mean);
             } else {
             }
-            let disabled = this._proxy.DisabledUntilTomorrow;
-            this._disableItem.label.text = disabled
-                ? _('Resume')
-                : _('Disable Until Tomorrow');
+            if (includeNL) {
+                let disabled = this._proxy.DisabledUntilTomorrow;
+                this._disableItem.label.text = disabled
+                    ? _('Resume')
+                    : _('Disable Until Tomorrow');
+            }
             this.syncing = false;
         }
     }
@@ -245,13 +264,10 @@ const NightLightQMT = GObject.registerClass(
             this._disableItem.label.text = paused
                 ? _('Resume')
                 : _('Disable Until Tomorrow');
-            let disabled = !this._proxy.NightLightActive;
+            let disabled = !this.checked;
             let subtitle_1 = disabled ? _('Disabled') : ( paused ? _('Paused') : _('Enabled') )
-            let start = this._proxy.Sunset;
-            let end = this._proxy.Sunrise;
-            let now = GLib.DateTime.new_now_local()
-            now = now.get_hour() + now.get_minute() / 60 + now.get_second() / 3600
-            let active = ( now < end ) || ( now > start )
+
+            let active = this._proxy.NightLightActive
             let subtitle_2 = active ? _('On') : _('Off')
             this.subtitle = ( disabled || paused ) ? subtitle_1 : subtitle_1 + '; ' + subtitle_2
             this.syncing = false;
@@ -290,13 +306,13 @@ function addNightLightMenu(parent) {
         parent.nightLightToggle._sync();
     });
 
-    const nightLightSlider = new NightLightSlider({
+    parent.nightLightSlider = new NightLightSlider({
         minimum: 1000,
         maximum: 10000,
         swapAxis: false,
         showAlways: true,
     });
-    parent.menu.addMenuItem(nightLightSlider);
+    parent.menu.addMenuItem(parent.nightLightSlider);
 
     parent._previewItem = parent.menu.addAction('Preview', () => {
         console.log(ColorInterface)

@@ -25,14 +25,13 @@ function getValueFromArray(array, key, idx) {
     return null;
 }
 
-function getDisplays() {
+export function getDisplays() {
     const result = MyShell.exec('ddcutil detect --brief');
-
     if (result == null) {
         return null;
     }
 
-    Log.Log.log(`getDisplays - ${result}`);
+    console.log(`getDisplays - ${result}`);
     const displays = [];
 
     result.split('Display ').forEach(group => {
@@ -49,13 +48,13 @@ function getDisplays() {
                 let max = rv.max;
 
                 if (current == null || max == null) {
-                    Log.Log.log(
+                    console.log(
                         `getDisplays - ERR ${bus}, ${description}, ${name}, ${current}, ${max}`
                     );
                     current = 0;
                     max = 100;
                 } else {
-                    Log.Log.log(
+                    console.log(
                         `getDisplays - OK ${bus}, ${description}, ${name}, ${current}, ${max}`
                     );
                 }
@@ -68,7 +67,7 @@ function getDisplays() {
                     max,
                 });
             } else {
-                Log.Log.log(
+                console.log(
                     `getDisplays - ERR ${bus}, ${description}, ${name}`
                 );
             }
@@ -78,9 +77,9 @@ function getDisplays() {
     return displays;
 }
 
-function getDisplayBrightness(bus) {
+export function getDisplayBrightness(bus) {
     const result = MyShell.exec(`ddcutil getvcp 10 --bus ${bus} --brief`);
-    Log.Log.log(`getDisplayBrightness - bus: ${bus}, result: ${result}`);
+    console.log(`getDisplayBrightness - bus: ${bus}, result: ${result}`);
 
     let values = getValueFromString(
         getValueFromString(result, 'VCP ', 1),
@@ -100,9 +99,9 @@ function getDisplayBrightness(bus) {
     };
 }
 
-function setDisplayBrightness(bus, value) {
+export function setDisplayBrightness(bus, value) {
     const result = MyShell.execAsync(`ddcutil setvcp 10 ${value} --bus ${bus}`);
-    Log.Log.log(
+    console.log(
         `setDisplayBrightness - value: ${value}, bus: ${bus}, result: ${result}`
     );
 }

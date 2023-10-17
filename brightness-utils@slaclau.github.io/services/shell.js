@@ -1,7 +1,7 @@
 import GLib from 'gi://GLib';
 const ByteArray = imports.byteArray;
 
-function exec(cmd) {
+export function exec(cmd) {
     try {
         let [, out] = GLib.spawn_command_line_sync(cmd);
         const response = ByteArray.toString(out);
@@ -11,7 +11,7 @@ function exec(cmd) {
     }
 }
 
-function execAsync(cmd) {
+export function execAsync(cmd) {
     try {
         let [, out] = GLib.spawn_command_line_async(cmd);
         const response = ByteArray.toString(out);
