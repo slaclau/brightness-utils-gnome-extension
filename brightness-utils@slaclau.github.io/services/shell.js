@@ -1,10 +1,11 @@
 import GLib from 'gi://GLib';
-const ByteArray = imports.byteArray;
+
+const decoder = new TextDecoder();
 
 export function exec(cmd) {
     try {
         let [, out] = GLib.spawn_command_line_sync(cmd);
-        const response = ByteArray.toString(out);
+        const response = decoder.decode(out);
         return response;
     } catch (err) {
         return null;
@@ -14,7 +15,7 @@ export function exec(cmd) {
 export function execAsync(cmd) {
     try {
         let [, out] = GLib.spawn_command_line_async(cmd);
-        const response = ByteArray.toString(out);
+        const response = decoder.decode(out);
         return response;
     } catch (err) {
         return null;

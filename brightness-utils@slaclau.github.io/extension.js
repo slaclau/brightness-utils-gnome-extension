@@ -31,6 +31,11 @@ export default class MyExtension extends Extension {
         for (let feature of this.features) {
             feature.unload();
         }
+
+        if (sourceId) {
+            GLib.Source.remove(sourceId);
+            sourceId = null;
+        }
     }
 
     removeUnneeded() {

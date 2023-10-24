@@ -1,5 +1,4 @@
 import * as DDC from '../services/ddc.js';
-import * as Timer from '../services/timer.js';
 
 import * as extension from '../extension.js';
 
@@ -28,7 +27,6 @@ const P_OBJECT_PATH = '/org/gnome/SettingsDaemon/Power';
 const BrightnessInterface = loadInterfaceXML(
     'org.gnome.SettingsDaemon.Power.Screen'
 );
-const BrightnessProxy = Gio.DBusProxy.makeProxyWrapper(BrightnessInterface);
 
 const C_BUS_NAME = 'org.gnome.SettingsDaemon.Color';
 const C_OBJECT_PATH = '/org/gnome/SettingsDaemon/Color';
@@ -45,7 +43,6 @@ const ColorInterface = `<node>
   </interface>
 </node>`;
 
-const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
 
 const COLOR_SCHEMA = 'org.gnome.settings-daemon.plugins.color';
 const includeNL = false;
@@ -90,7 +87,7 @@ const BrightnessSlider = GObject.registerClass(
             this.slider.connect('notify::value', item => {
                 this._setBrightness(item._value);
             });
-
+            this.connect('destroy', this._onDestroy.bind(this));
             this.add(this.slider);
         }
 
@@ -106,12 +103,22 @@ const BrightnessSlider = GObject.registerClass(
             let brightness = this._ratioToBrightness(sliderValue);
             console.log(`Setting ${this.name} to ${brightness}`);
             if (this.timeout) {
-                Timer.clearTimeout(this.timeout);
+                GLib.Source.remove(this.timeout);
+                this.timeout = null;
             }
-            this.timeout = Timer.setTimeout(() => {
+            this.timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 500, () => {
                 DDC.setDisplayBrightness(this.bus, brightness);
-            }, 500);
+
+                return GLib.SOURCE_CONTINUE;
+            });
             this.master.sync();
+        }
+
+        _onDestroy() {
+            if (this.timeout) {
+                GLib.Source.remove(this.timeout);
+                this.timeout = null;
+            }
         }
     }
 );
@@ -283,6 +290,7 @@ function addNightLightMenu(parent) {
     parent.nightLightToggle = new NightLightToggle();
     parent.menu.addMenuItem(parent.nightLightToggle);
 
+    const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
     parent._proxy = new ColorProxy(
         Gio.DBus.session,
         C_BUS_NAME,
@@ -361,6 +369,7 @@ const BuiltinSlider = GObject.registerClass(
             this.master = master;
             this.slider = new Slider.Slider(0);
             this.add(this.slider);
+            const BrightnessProxy = Gio.DBusProxy.makeProxyWrapper(BrightnessInterface);
             this._proxy = new BrightnessProxy(
                 Gio.DBus.session,
                 P_BUS_NAME,
