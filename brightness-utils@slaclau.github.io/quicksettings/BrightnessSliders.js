@@ -1,6 +1,6 @@
 import * as DDC from '../services/ddc.js';
 
-import * as extension from '../extension.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -499,16 +499,16 @@ const Feature = GObject.registerClass(
     }
 );
 function debounce(func, wait, options = {priority: GLib.PRIORITY_DEFAULT}) {
-    let sourceId;
     return function (...args) {
+        let extensionObject = Extension.lookupByUUID('brightness-utils@slaclau.github.io');
         const debouncedFunc = () => {
-            sourceId = null;
+            extensionObject.sourceId = null;
             func.apply(this, args);
         };
 
         // It is a programmer error to attempt to remove a non-existent source
-        if (sourceId) GLib.Source.remove(sourceId);
-        sourceId = GLib.timeout_add(options.priority, wait, debouncedFunc);
+        if (extensionObject.sourceId) GLib.Source.remove(sourceId);
+        extensionObject.sourceId = GLib.timeout_add(options.priority, wait, debouncedFunc);
     };
 }
 
