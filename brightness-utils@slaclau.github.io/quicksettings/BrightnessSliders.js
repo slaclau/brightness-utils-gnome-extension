@@ -106,10 +106,8 @@ const BrightnessSlider = GObject.registerClass(
                 GLib.Source.remove(this.timeout);
                 this.timeout = null;
             }
-            this.timeout = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 500, () => {
+            this.timeout = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
                 DDC.setDisplayBrightness(this.bus, brightness);
-
-                return GLib.SOURCE_CONTINUE;
             });
             this.master.sync();
         }
@@ -511,5 +509,6 @@ function debounce(func, wait, options = {priority: GLib.PRIORITY_DEFAULT}) {
         extensionObject.sourceId = GLib.timeout_add(options.priority, wait, debouncedFunc);
     };
 }
+
 
 
