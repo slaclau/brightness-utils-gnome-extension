@@ -88,7 +88,7 @@ const BrightnessSlider = GObject.registerClass(
                 this._setBrightness(item._value);
             });
             this.connect('destroy', this._onDestroy.bind(this));
-            this.add(this.slider);
+            this.add_child(this.slider);
         }
 
         setValue(value) {
@@ -366,7 +366,7 @@ const BuiltinSlider = GObject.registerClass(
             super._init('Built in', 'display-brightness-symbolic', {});
             this.master = master;
             this.slider = new Slider.Slider(0);
-            this.add(this.slider);
+            this.add_child(this.slider);
             const BrightnessProxy = Gio.DBusProxy.makeProxyWrapper(BrightnessInterface);
             this._proxy = new BrightnessProxy(
                 Gio.DBus.session,
@@ -422,7 +422,7 @@ const NightLightSlider = GObject.registerClass(
             this._settings = new Gio.Settings({schema_id: COLOR_SCHEMA});
             this._slider = new Slider.Slider(0);
             this._sync = debounce(this.__sync.bind(this), 500);
-            this.add(this._slider);
+            this.add_child(this._slider);
 
             this._sliderChangedId = this._slider.connect(
                 'notify::value',
