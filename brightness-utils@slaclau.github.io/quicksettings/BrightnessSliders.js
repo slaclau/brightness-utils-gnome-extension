@@ -479,9 +479,14 @@ const Feature = GObject.registerClass(
     class Feature extends QuickSettings.SystemIndicator {
         _init(displays) {
             super._init();
+            this.queueModifyQuickSettings(displays)
+        }
+
+        modifyQuickSettings(displays) {
             let master = new MasterSlider(displays);
             this.quickSettingsItems.push(master);
             let children = QuickSettingsGrid.get_children();
+            console.log(`Children ${children}`)
             let sibling = children[2];
             QuickSettingsMenu._addItemsBefore([master], sibling, 2);
             if (!includeNL) {
@@ -492,8 +497,23 @@ const Feature = GObject.registerClass(
             }
             this.connect('destroy', () => {
                 this.quickSettingsItems.forEach(item => item.destroy());
+                if (this.sourceId) {
+                    GLib.Source.remove(this.sourceId);
+                    this.sourceId = null;
+                }
             });
         }
+
+        queueModifyQuickSettings(displays) {
+            this.sourceId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                if ( QuickSettingsGrid.get_children().length < 2) {
+                    return GLib.SOURCE_CONTINUE;
+                }
+                this.modifyQuickSettings(displays);
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+
     }
 );
 function debounce(func, wait, options = {priority: GLib.PRIORITY_DEFAULT}) {
